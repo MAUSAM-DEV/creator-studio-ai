@@ -1,48 +1,64 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import {
+  generateImage,
+} from "@/lib/services/imageGenerationService";
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request
+) {
   try {
-    const body = await req.json();
-    const { prompt } = body;
+    const body =
+      await req.json();
+
+    const {
+      prompt,
+      provider = "openai",
+      count = 1,
+      projectId,
+    } = body;
 
     if (!prompt) {
       return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
+        {
+          error:
+            "Prompt is required",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const response = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: prompt,
-      size: "1024x1024",
-    });
+    const result =
+      await generateImage({
+        prompt,
+        provider,
+        count,
+        projectId,
+      });
 
-    const image = response.data?.[0]?.b64_json;
+    return NextResponse.json(
+      result
+    );
 
-    if (!image) {
-      return NextResponse.json(
-        { error: "No image generated" },
-        { status: 500 }
-      );
-    }
+  } catch (error: any) {
 
-    return NextResponse.json({
-      success: true,
-      image: `data:image/png;base64,${image}`,
-    });
+    console.error(
+      "IMAGE GENERATION ERROR:"
+    );
 
-  } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Image generation failed" },
-      { status: 500 }
+      {
+        error:
+          error?.message ||
+          "Image generation failed",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

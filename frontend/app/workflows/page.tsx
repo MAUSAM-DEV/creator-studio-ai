@@ -1,13 +1,5 @@
-export default function WorkflowsPage() {
-  return (
-    <div className="text-white p-10">
-      <h1 className="text-4xl font-bold mb-4">
-        Workflows
-      </h1>
+import WorkflowRunner from "@/components/WorkflowRunner";
 
-      <p className="text-gray-400">
-        Build AI automation workflows here.
-      </p>
-    </div>
-  );
+export default function WorkflowsPage() {
+  return <WorkflowRunner />;
 }
