@@ -9,9 +9,17 @@ import {
   Film,
   Music4,
   Workflow,
+  Home,
 } from "lucide-react";
 
+
+
 const links = [
+  {
+  name: "Home",
+  route: "/",
+  icon: Home,
+},
   {
     name: "Dashboard",
     route: "/dashboard",
