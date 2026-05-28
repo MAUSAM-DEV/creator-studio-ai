@@ -1,58 +1,77 @@
 import {
-  setNodeExecutionState,
-} from "./workflowExecutionStore";
-
-function sleep(ms: number) {
-  return new Promise((resolve) =>
-    setTimeout(resolve, ms)
-  );
-}
+  WorkflowService,
+} from "@/../Backend/services/workflow/WorkflowService";
 
 export async function runWorkflow(
-  nodes: any[],
-  setNodes: any
+  workflow: any,
+  setNodes?: any
 ) {
-  for (const node of nodes) {
-    setNodeExecutionState(node.id, {
-      nodeId: node.id,
-      status: "running",
-      startedAt: Date.now(),
-    });
+  console.log(
+    "FRONTEND WORKFLOW EXECUTION"
+  );
 
-    setNodes((currentNodes: any[]) =>
-      currentNodes.map((currentNode) =>
-        currentNode.id === node.id
-          ? {
-              ...currentNode,
-              data: {
-                ...currentNode.data,
-                executionStatus: "running",
-              },
-            }
-          : currentNode
-      )
-    );
-
-    await sleep(2000);
-
-    setNodeExecutionState(node.id, {
-      nodeId: node.id,
-      status: "success",
-      completedAt: Date.now(),
-    });
-
-    setNodes((currentNodes: any[]) =>
-      currentNodes.map((currentNode) =>
-        currentNode.id === node.id
-          ? {
-              ...currentNode,
-              data: {
-                ...currentNode.data,
-                executionStatus: "success",
-              },
-            }
-          : currentNode
-      )
+  if (setNodes) {
+    setNodes((nds: any[]) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          status: "idle",
+        },
+      }))
     );
   }
+
+  const workflowService =
+    new WorkflowService();
+
+  for (const node of workflow.nodes) {
+    if (setNodes) {
+      setNodes((nds: any[]) =>
+        nds.map((n) =>
+          n.id === node.id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  status: "running",
+                },
+              }
+            : n
+        )
+      );
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, 1200)
+    );
+
+    if (setNodes) {
+      setNodes((nds: any[]) =>
+        nds.map((n) =>
+          n.id === node.id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  status: "completed",
+                },
+              }
+            : n
+        )
+      );
+    }
+  }
+
+  const result =
+    await workflowService.executeWorkflow(
+      workflow
+    );
+
+  console.log(
+    "WORKFLOW RESULT:",
+    result
+  );
+
+  return result;
 }

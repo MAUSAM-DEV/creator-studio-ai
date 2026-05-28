@@ -2,16 +2,16 @@
 
 import BaseWorkflowNode from "./BaseWorkflowNode";
 
-export default function VideoNode(props: any) {
+export default function VoiceNode(props: any) {
   return (
     <BaseWorkflowNode
       {...props}
       data={{
         ...props.data,
-        label: "Video Generation",
+        label: "Voice Generation",
         description:
-          "Generate AI videos",
-        color: "#a855f7",
+          "Generate AI voice",
+        color: "#f97316",
       }}
     />
   );

@@ -1,5 +1,9 @@
-import WorkflowRunner from "@/components/WorkflowRunner";
+import WorkflowStudio from "@/components/workflow/WorkflowStudio";
 
 export default function WorkflowsPage() {
-  return <WorkflowRunner />;
+  return (
+    <div className="p-6">
+      <WorkflowStudio />
+    </div>
+  );
 }

@@ -1,25 +1,45 @@
 "use client";
 
+import {
+  useCallback,
+} from "react";
+
 import ReactFlow, {
   Background,
   Controls,
+  addEdge,
   Connection,
   Edge,
   Node,
-  addEdge,
+  OnEdgesChange,
+  OnNodesChange,
+  ReactFlowInstance,
+  useReactFlow,
 } from "reactflow";
 
 import "reactflow/dist/style.css";
 
+import {
+  reactFlowNodeTypes,
+} from "@/lib/workflows/reactFlowNodeTypes";
+
 interface WorkflowCanvasProps {
   nodes: Node[];
-  edges: Edge[];
-  onNodesChange: any;
-  onEdgesChange: any;
-  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
-}
 
-import { reactFlowNodeTypes } from "@/lib/workflows/reactFlowNodeTypes";
+  edges: Edge[];
+
+  onNodesChange: OnNodesChange;
+
+  onEdgesChange: OnEdgesChange;
+
+  setEdges: React.Dispatch<
+    React.SetStateAction<Edge[]>
+  >;
+
+  setNodes?: React.Dispatch<
+    React.SetStateAction<Node[]>
+  >;
+}
 
 export default function WorkflowCanvas({
   nodes,
@@ -27,20 +47,81 @@ export default function WorkflowCanvas({
   onNodesChange,
   onEdgesChange,
   setEdges,
+  setNodes,
 }: WorkflowCanvasProps) {
-  const onConnect = (connection: Connection) => {
-    setEdges((eds) => addEdge(connection, eds));
-  };
+  const onConnect = useCallback(
+    (params: Edge | Connection) =>
+      setEdges((eds: Edge[]) =>
+        addEdge(params, eds)
+      ),
+    [setEdges]
+  );
+
+  const onDragOver = useCallback(
+    (
+      event: React.DragEvent
+    ) => {
+      event.preventDefault();
+
+      event.dataTransfer.dropEffect =
+        "move";
+    },
+    []
+  );
+
+  const onDrop = useCallback(
+    (
+      event: React.DragEvent
+    ) => {
+      event.preventDefault();
+
+      const type =
+        event.dataTransfer.getData(
+          "application/reactflow"
+        );
+
+      if (!type || !setNodes) return;
+
+      const position = {
+        x: event.clientX - 250,
+        y: event.clientY - 100,
+      };
+
+      const newNode: Node = {
+        id: `${type}-${Date.now()}`,
+
+        type,
+
+        position,
+
+        data: {},
+      };
+
+      setNodes((nds) => [
+        ...nds,
+        newNode,
+      ]);
+    },
+    [setNodes]
+  );
 
   return (
-    <div className="relative h-full w-full">
+    <div className="h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        nodeTypes={reactFlowNodeTypes}
+        onNodesChange={
+          onNodesChange
+        }
+        onEdgesChange={
+          onEdgesChange
+        }
+        nodeTypes={
+          reactFlowNodeTypes
+        }
+        onDrop={onDrop}
+        onDragOver={onDragOver}
         fitView
       >
         <Background />

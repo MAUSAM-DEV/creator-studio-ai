@@ -1,156 +1,324 @@
 "use client";
 
-import { runWorkflow } from "@/lib/workflows/runWorkflow";
-import { useEffect, useState } from "react";
 import {
-  Edge,
-  Node,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+
+import ReactFlow, {
+  Background,
+  Controls,
+  addEdge,
   useEdgesState,
   useNodesState,
+  Connection,
+  Edge,
+  Node,
+  ReactFlowProvider,
 } from "reactflow";
 
-import WorkflowCanvas from "./WorkflowCanvas";
-import WorkflowSidebar from "./WorkflowSidebar";
-import WorkflowToolbar from "./WorkflowToolbar";
+import "reactflow/dist/style.css";
 
-const initialNodes: Node[] = [];
+import PromptNode from "./nodes/PromptNode";
+import ImageNode from "./nodes/ImageNode";
+import VideoNode from "./nodes/VideoNode";
+import VoiceNode from "./nodes/VoiceNode";
 
-export default function WorkflowStudio() {
-  const [selectedNodeType, setSelectedNodeType] = useState<string | null>(
-    null
-  );
+const nodeTypes = {
+  promptNode: PromptNode,
+  imageNode: ImageNode,
+  videoNode: VideoNode,
+  voiceNode: VoiceNode,
+};
 
+const initialNodes: Node[] = [
+  {
+    id: "1",
+    type: "promptNode",
+    position: { x: 100, y: 200 },
+    data: {},
+  },
+  {
+    id: "2",
+    type: "imageNode",
+    position: { x: 420, y: 200 },
+    data: {},
+  },
+  {
+    id: "3",
+    type: "videoNode",
+    position: { x: 740, y: 200 },
+    data: {},
+  },
+  {
+    id: "4",
+    type: "voiceNode",
+    position: { x: 1060, y: 200 },
+    data: {},
+  },
+];
+
+const initialEdges: Edge[] = [
+  {
+    id: "e1-2",
+    source: "1",
+    target: "2",
+    animated: true,
+  },
+  {
+    id: "e2-3",
+    source: "2",
+    target: "3",
+    animated: true,
+  },
+  {
+    id: "e3-4",
+    source: "3",
+    target: "4",
+    animated: true,
+  },
+];
+
+function WorkflowCanvas() {
+  const [mode, setMode] = useState<"standard" | "visual">("visual");
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-useEffect(() => {
-  const savedWorkflow =
-    localStorage.getItem("mausam-workflow");
+  const updateNodeStatus = (
+  nodeId: string,
+  status: string
+) => {
+  setNodes((nds) =>
+    nds.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              status,
+            },
+          }
+        : node
+    )
+  );
+};
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  if (!savedWorkflow) return;
+  const deleteNode = useCallback(
+    (nodeId: string) => {
+      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+      setEdges((eds) =>
+        eds.filter(
+          (edge) => edge.source !== nodeId && edge.target !== nodeId
+        )
+      );
+    },
+    [setNodes, setEdges]
+  );
 
-  try {
-    const workflow = JSON.parse(savedWorkflow);
+  const onConnect = useCallback(
+    (params: Connection) => {
+      setEdges((eds) => addEdge(params, eds));
+    },
+    [setEdges]
+  );
 
-    if (workflow.nodes) {
-      setNodes(workflow.nodes);
-    }
-
-    if (workflow.edges) {
-      setEdges(workflow.edges);
-    }
-  } catch (error) {
-    console.error(
-      "Failed to load workflow",
-      error
-    );
-  }
-}, [setNodes, setEdges]);
-
-  useEffect(() => {
-    if (!selectedNodeType) return;
-
-    const typeMap: Record<string, string> = {
-      Prompt: "promptNode",
-      Image: "imageNode",
-      Video: "videoNode",
-    };
-
-    const nodeType = typeMap[selectedNodeType];
-    if (!nodeType) return;
-
-    const newNode: Node = {
-      id: `${Date.now()}`,
-      type: nodeType,
-      position: {
-        x: 250 + Math.random() * 200,
-        y: 150 + Math.random() * 200,
+  const styledNodes = useMemo(() => {
+    return nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        onDelete: () => deleteNode(node.id),
       },
-      data: {},
-    };
-
-    setNodes((nds: Node[]) => [...nds, newNode]);
-    setSelectedNodeType(null);
-  }, [selectedNodeType, setNodes]);
-
-  const saveWorkflow = () => {
-    const workflow = { nodes, edges };
-    localStorage.setItem(
-      "mausam-workflow",
-      JSON.stringify(workflow)
-    );
-    alert("Workflow saved");
-  };
-
-  const clearWorkflow = () => {
-  setNodes([]);
-  setEdges([]);
-
-  localStorage.removeItem("mausam-workflow");
-
-  alert("Workflow cleared");
-};
-
-  const runWorkflowHandler = async () => {
-  await runWorkflow(
-    nodes,
-    setNodes
-  );
-};
-
-  const hasGenerationNode = nodes.some(
-    (node) =>
-      node.type === "imageNode" ||
-      node.type === "videoNode"
-  );
-
-  const hasConnections = edges.length > 0;
-
-  const hasPromptNode = nodes.some(
-  (node) => node.type === "prompt"
-);
-
-  if (!hasPromptNode) {
-    alert("Validation Failed: Missing Prompt Node");
-    return;
-  }
-
-  if (!hasGenerationNode) {
-    alert(
-      "Validation Failed: Missing Image or Video Node"
-    );
-    return;
-  }
-
-  if (!hasConnections) {
-    alert("Validation Failed: No Connections Found");
-    return;
-  }
-
-  alert("Workflow Valid");
+    }));
+  }, [nodes, deleteNode]);
 
   return (
-    <div className="h-[calc(100vh-140px)] overflow-hidden rounded-2xl border border-white/10 bg-zinc-950">
-      <WorkflowToolbar
-        onSave={saveWorkflow}
-        onClear={clearWorkflow}
-        onRun={runWorkflowHandler}
-      />
+    <div className="p-8">
+      <div className="flex gap-4 mb-8">
+        <button
+          onClick={() => setMode("standard")}
+          className={`
+            px-6 py-3 rounded-2xl border transition font-semibold
+            ${
+              mode === "standard"
+                ? "bg-cyan-500 text-black border-cyan-400"
+                : "bg-zinc-900 text-white border-zinc-700 hover:bg-zinc-800"
+            }
+          `}
+        >
+          Standard Workflow
+        </button>
 
-      <div className="flex h-screen">
-        <WorkflowSidebar
-          setSelectedNodeType={setSelectedNodeType}
-        />
-
-        <div className="flex-1">
-          <WorkflowCanvas
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            setEdges={setEdges}
-          />
-        </div>
+        <button
+          onClick={() => setMode("visual")}
+          className={`
+            px-6 py-3 rounded-2xl border transition font-semibold
+            ${
+              mode === "visual"
+                ? "bg-cyan-500 text-black border-cyan-400"
+                : "bg-zinc-900 text-white border-zinc-700 hover:bg-zinc-800"
+            }
+          `}
+        >
+          Visual Workflow
+        </button>
       </div>
+
+      <div className="flex items-start justify-between gap-8 mb-10">
+        <div>
+          <h1 className="text-7xl font-black leading-none text-white">
+            Workflow
+            <br />
+            Studio
+          </h1>
+          <p className="mt-4 text-2xl text-zinc-400">
+            Professional AI Workflow Builder
+          </p>
+        </div>
+
+        {mode === "visual" && (
+  <div className="flex gap-4 pt-6">
+          <button className="px-6 py-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Save
+          </button>
+          <button className="px-6 py-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Test
+          </button>
+          <button className="px-6 py-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Reset
+          </button>
+          <button className="px-6 py-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Clear
+          </button>
+          <button className="px-8 py-3 rounded-2xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition">
+            Run Workflow
+          </button>
+        </div>
+)}
+      </div>
+
+      {mode === "standard" && (
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-10 text-white">
+          <h2 className="text-3xl font-bold mb-4">
+            Standard Workflow Builder
+          </h2>
+
+          <p className="text-zinc-400 mb-8">
+            Beginner-friendly AI workflow setup.
+          </p>
+
+          <textarea
+            className="w-full h-52 rounded-2xl bg-zinc-900 border border-zinc-800 p-5 outline-none"
+            placeholder="Describe your workflow..."
+          />
+
+          <button
+  onClick={async () => {
+  console.clear();
+
+  console.log("=================================");
+  console.log("WORKFLOW EXECUTION STARTED");
+  console.log("=================================");
+
+  for (const node of styledNodes) {
+
+    updateNodeStatus(
+      node.id,
+      "running"
+    );
+
+    console.log(
+      "Executing:",
+      node.type
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(resolve, 1200)
+    );
+
+    updateNodeStatus(
+      node.id,
+      "completed"
+    );
+  }
+
+  console.log("=================================");
+  console.log("WORKFLOW EXECUTION COMPLETED");
+  console.log("=================================");
+}}
+    
+  className="
+    px-8 py-3
+    rounded-2xl
+    bg-cyan-500
+    text-black
+    font-bold
+    hover:bg-cyan-400
+    transition
+  "
+>
+  Run Workflow
+</button>
+        </div>
+      )}
+
+      {mode === "visual" && (
+        <div className="h-[700px] rounded-3xl border border-zinc-800 overflow-hidden">
+          <div className="flex h-full">
+            <div className="w-[300px] border-r border-zinc-800 bg-black p-6">
+              <h2 className="text-4xl font-bold text-white">
+                Workflow Nodes
+              </h2>
+
+              <p className="mt-3 text-zinc-500">
+                Drag nodes into workflow
+              </p>
+
+              <div className="mt-8 space-y-5">
+                <button className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-6 text-left text-3xl font-semibold text-white">
+                  Prompt Node
+                </button>
+
+                <button className="w-full rounded-2xl border border-cyan-900 bg-cyan-950/30 px-5 py-6 text-left text-3xl font-semibold text-white">
+                  Image Node
+                </button>
+
+                <button className="w-full rounded-2xl border border-purple-900 bg-purple-950/30 px-5 py-6 text-left text-3xl font-semibold text-white">
+                  Video Node
+                </button>
+
+                <button className="w-full rounded-2xl border border-orange-900 bg-orange-950/30 px-5 py-6 text-left text-3xl font-semibold text-white">
+                  Voice Node
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-[#030712]">
+              <ReactFlow
+                nodes={styledNodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                fitView
+              >
+                <Background />
+                <Controls />
+              </ReactFlow>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function WorkflowStudio() {
+  return (
+    <ReactFlowProvider>
+      <WorkflowCanvas />
+    </ReactFlowProvider>
   );
 }
