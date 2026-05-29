@@ -81,9 +81,10 @@ const initialEdges: Edge[] = [
 ];
 
 function WorkflowCanvas() {
-  const [mode, setMode] = useState<"standard" | "visual">("visual");
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const updateNodeStatus = (
+  const [nodes, setNodes, onNodesChange] =
+  useNodesState(initialNodes);
+
+const updateNodeStatus = (
   nodeId: string,
   status: string
 ) => {
@@ -258,7 +259,52 @@ function WorkflowCanvas() {
     transition
   "
 >
+  <button
+  onClick={async () => {
+    console.clear();
+
+    console.log("================================");
+    console.log("WORKFLOW EXECUTION STARTED");
+    console.log("================================");
+
+    for (const node of styledNodes) {
+      console.log(
+        `Executing Node:`,
+        node.data.label
+      );
+
+      updateNodeStatus(node.id, "running");
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1500)
+      );
+
+      updateNodeStatus(node.id, "completed");
+
+      console.log(
+        `Completed Node:`,
+        node.data.label
+      );
+    }
+
+    console.log("================================");
+    console.log("WORKFLOW EXECUTION COMPLETED");
+    console.log("================================");
+  }}
+  className="
+    px-8
+    py-3
+    rounded-2xl
+    bg-cyan-500
+    text-black
+    font-bold
+    hover:bg-cyan-400
+    transition
+  "
+>
   Run Workflow
+</button>
+
 </button>
         </div>
       )}
