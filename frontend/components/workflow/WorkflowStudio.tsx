@@ -84,41 +84,53 @@ function WorkflowCanvas() {
   const [nodes, setNodes, onNodesChange] =
   useNodesState(initialNodes);
 
+  const [mode, setMode] = useState<
+  "standard" | "visual"
+>("visual");
+
 const updateNodeStatus = (
   nodeId: string,
   status: string
 ) => {
-  setNodes((nds) =>
-    nds.map((node) =>
-      node.id === nodeId
-        ? {
-            ...node,
-            data: {
-              ...node.data,
-              status,
-            },
-          }
-        : node
-    )
-  );
+  setNodes((nds: Node[]) =>
+  nds.map((node: Node) =>
+    node.id === nodeId
+      ? {
+          ...node,
+          data: {
+            ...node.data,
+            status,
+          },
+        }
+      : node
+  )
+);
 };
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+const [edges, setEdges, onEdgesChange] =
+  useEdgesState(initialEdges);
 
   const deleteNode = useCallback(
     (nodeId: string) => {
-      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-      setEdges((eds) =>
-        eds.filter(
-          (edge) => edge.source !== nodeId && edge.target !== nodeId
-        )
-      );
+      setNodes((nds: Node[]) =>
+  nds.filter((node: Node) => node.id !== nodeId)
+);
+      setEdges((eds: Edge[]) =>
+  eds.filter(
+    (edge: Edge) =>
+      edge.source !== nodeId &&
+      edge.target !== nodeId
+  )
+);
     },
     [setNodes, setEdges]
   );
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => addEdge(params, eds));
+      setEdges((eds: Edge[]) =>
+  addEdge(params, eds)
+);
     },
     [setEdges]
   );
@@ -132,7 +144,74 @@ const updateNodeStatus = (
       },
     }));
   }, [nodes, deleteNode]);
+const runWorkflow = async () => {
+  try {
+    console.clear();
 
+    console.log("==============================");
+    console.log("WORKFLOW EXECUTION STARTED");
+    console.log("==============================");
+
+    for (const node of styledNodes) {
+      updateNodeStatus(node.id, "running");
+    }
+
+    const response = await fetch(
+      "/api/workflows/youtube-short",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: "Workflow Studio Test",
+          imageProvider: "flux",
+          voiceProvider: "openai",
+          videoProvider: "runway",
+          imageCount: 1,
+          videoCount: 1,
+          duration: 10,
+          aspectRatio: "9:16",
+        }),
+      }
+    );
+
+    if (!response.ok) {
+  const errorData = await response.json();
+
+  console.error("BACKEND ERROR:");
+  console.error(errorData);
+
+  throw new Error(
+    errorData?.error ||
+    "Workflow execution failed"
+  );
+}
+
+    const result = await response.json();
+
+    console.log("Workflow Result:", result);
+
+    for (const node of styledNodes) {
+      updateNodeStatus(node.id, "completed");
+    }
+
+    console.log("==============================");
+    console.log("WORKFLOW EXECUTION COMPLETED");
+    console.log("==============================");
+ 
+} catch (error) {
+  console.error("RUN WORKFLOW ERROR");
+  console.error(error);
+
+  alert(
+    error instanceof Error
+      ? error.message
+      : String(error)
+  );
+}
+
+};
   return (
     <div className="p-8">
       <div className="flex gap-4 mb-8">
@@ -191,9 +270,12 @@ const updateNodeStatus = (
           <button className="px-6 py-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
             Clear
           </button>
-          <button className="px-8 py-3 rounded-2xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition">
-            Run Workflow
-          </button>
+          <button
+  onClick={runWorkflow}
+  className="px-8 py-3 rounded-2xl bg-cyan-500 ..."
+>
+  Run Workflow
+</button>
         </div>
 )}
       </div>
@@ -213,53 +295,7 @@ const updateNodeStatus = (
             placeholder="Describe your workflow..."
           />
 
-          <button
-  onClick={async () => {
-  console.clear();
-
-  console.log("=================================");
-  console.log("WORKFLOW EXECUTION STARTED");
-  console.log("=================================");
-
-  for (const node of styledNodes) {
-
-    updateNodeStatus(
-      node.id,
-      "running"
-    );
-
-    console.log(
-      "Executing:",
-      node.type
-    );
-
-    await new Promise(
-      (resolve) =>
-        setTimeout(resolve, 1200)
-    );
-
-    updateNodeStatus(
-      node.id,
-      "completed"
-    );
-  }
-
-  console.log("=================================");
-  console.log("WORKFLOW EXECUTION COMPLETED");
-  console.log("=================================");
-}}
-    
-  className="
-    px-8 py-3
-    rounded-2xl
-    bg-cyan-500
-    text-black
-    font-bold
-    hover:bg-cyan-400
-    transition
-  "
->
-  <button
+<button
   onClick={async () => {
     console.clear();
 
@@ -268,23 +304,15 @@ const updateNodeStatus = (
     console.log("================================");
 
     for (const node of styledNodes) {
-      console.log(
-        `Executing Node:`,
-        node.data.label
-      );
-
       updateNodeStatus(node.id, "running");
 
+      console.log("Executing:", node.type);
+
       await new Promise((resolve) =>
-        setTimeout(resolve, 1500)
+        setTimeout(resolve, 1200)
       );
 
       updateNodeStatus(node.id, "completed");
-
-      console.log(
-        `Completed Node:`,
-        node.data.label
-      );
     }
 
     console.log("================================");
@@ -305,7 +333,6 @@ const updateNodeStatus = (
   Run Workflow
 </button>
 
-</button>
         </div>
       )}
 
