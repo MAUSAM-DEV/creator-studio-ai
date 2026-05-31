@@ -13,9 +13,9 @@ export default function WorkflowTemplates({
 }: WorkflowTemplatesProps) {
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-semibold mb-4">
-        Workflow Templates
-      </h2>
+    <h2 className="text-2xl font-semibold mb-4 text-red-500">
+  WORKFLOW TEMPLATES TEST
+</h2>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         {workflowTemplates.map((template) => {

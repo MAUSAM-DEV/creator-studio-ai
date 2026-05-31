@@ -1,7 +1,7 @@
 "use client";
 
-import ResultsGallery from "./workflow/ResultsGallery";
-import HeroSection from "./workflow/HeroSection";
+import ResultsGallery from "../../components/workflow/ResultsGallery";
+import HeroSection from "../../components/workflow/HeroSection";
 import ProductionModeSelector from "@/components/workflow/ProductionModeSelector";
 import PlatformSelector from "@/components/workflow/PlatformSelector";
 import ProviderSelector from "@/components/workflow/ProviderSelector";
@@ -9,7 +9,7 @@ import PipelinePreview from "@/components/workflow/PipelinePreview";
 import CreatorReadyCard from "@/components/workflow/CreatorReadyCard";
 import ComingSoonCard from "@/components/workflow/ComingSoonCard";
 import GenerationControls from "@/components/workflow/GenerationControls";
-import WorkflowTemplates from "./workflow/WorkflowTemplates";
+import WorkflowTemplates from "../../components/workflow/WorkflowTemplates";
 import WorkflowStudio from "@/components/workflow/WorkflowStudio";
 import {
   productionModes,
@@ -431,8 +431,8 @@ setWorkflowCompleted(true);
 
 {viewMode === "visual" ? null : (
   <>
-<div className="mb-8">
-  <CreatorReadyCard />
+<div className="mb-8 text-red-500 text-5xl">
+  TEMPLATE BLOCK TEST
 </div>
 
       <GenerationControls
